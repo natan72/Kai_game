@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Quest: Minecraft Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(180deg, #87CEEB 0%, #98D8E8 100%);
+            overflow: hidden;
+            image-rendering: pixelated;
+        }
+
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background: #8B7355;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        .screen {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(139, 115, 85, 0.95);
+            border: 8px solid #654321;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h1 {
+            color: #FFD700;
+            font-size: 48px;
+            text-shadow: 4px 4px #654321;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #90EE90;
+            font-size: 32px;
+            text-shadow: 2px 2px #654321;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: 4px solid #2E7D32;
+            padding: 15px 30px;
+            font-size: 24px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            margin: 10px;
+            border-radius: 5px;
+            box-shadow: 0 6px #2E7D32;
+            transition: all 0.1s;
+        }
+
+        .button:hover {
+            background: #66BB6A;
+        }
+
+        .button:active {
+            box-shadow: 0 2px #2E7D32;
+            transform: translateY(4px);
+        }
+
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 20px;
+            text-shadow: 2px 2px black;
+            z-index: 100;
+        }
+
+        .progress-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            height: 30px;
+            background: rgba(0,0,0,0.5);
+            border: 3px solid white;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .letter-display {
+            font-size: 120px;
+            color: #FFD700;
+            text-shadow: 6px 6px #654321;
+            margin: 20px 0;
+        }
+
+        .word-examples {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .word-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            border: 3px solid #654321;
+        }
+
+        .word-item img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 10px;
+        }
+
+        #volumeControl {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .activity-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .option-button {
+            background: #2196F3;
+            border-color: #1565C0;
+            box-shadow: 0 6px #1565C0;
+            min-width: 150px;
+        }
+
+        .option-button:hover {
+            background: #42A5F5;
+        }
+
+        .keyboard {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .key-button {
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            padding: 10px;
+        }
+
+        canvas {
+            cursor: crosshair;
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .firework {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% {
+                transform: translate(0, 0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty));
+                opacity: 0;
+            }
+        }
+
+        .character-unlock {
+            background: rgba(255, 215, 0, 0.2);
+            border: 4px solid #FFD700;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .collected-characters {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            color: white;
+            font-size: 16px;
+            text-shadow: 2px 2px black;
+            z-index: 100;
+        }
+
+        .character-icon {
+            display: inline-block;
+            font-size: 32px;
+            margin: 2px;
+            filter: grayscale(100%);
+            opacity: 0.3;
+        }
+
+        .character-icon.unlocked {
+            filter: grayscale(0%);
+            opacity: 1;
+            animation: bounce 0.5s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .instruction-tooltip {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 18px;
+            margin: 10px 0;
+            border: 2px solid #FFD700;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+    
+    <div class="hud">
+        <div>⛏️ Pickaxes: <span id="pointsDisplay">0</span></div>
+        <div>🏆 Letters: <span id="lettersDisplay">0/26</span></div>
+    </div>
+
+    <div class="collected-characters" id="characterCollection">
+        <div style="margin-bottom: 5px;">Companions:</div>
+        <div id="characterIcons"></div>
+    </div>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <button id="volumeControl" class="button" style="padding: 10px 20px; font-size: 18px;">🔊</button>
+
+    <div id="menuScreen" class="screen active">
+        <h1>LETTER QUEST</h1>
+        <h2>⛏️ Minecraft Adventure ⛏️</h2>
+        <button class="button" id="newGameBtn">🌟 New Game</button>
+        <button class="button" id="continueBtn">📖 Continue Adventure</button>
+        <button class="button" id="reviewBtn">🔤 Letter Review</button>
+    </div>
+
+    <div id="letterIntroScreen" class="screen">
+        <h2>New Letter Mine Discovered!</h2>
+        <div class="letter-display" id="introLetter"></div>
+        <div id="wordExamples" class="word-examples"></div>
+        <button class="button" id="startActivitiesBtn">Start Mining! ⛏️</button>
+    </div>
+
+    <div id="activityScreen" class="screen">
+        <h2 id="activityTitle"></h2>
+        <div id="activityContent" class="activity-container"></div>
+    </div>
+
+    <div id="completionScreen" class="screen">
+        <h1>🎉 Great Job Today! 🎉</h1>
+        <h2 id="completionMessage"></h2>
+        <div style="font-size: 24px; color: white; margin: 20px 0;">
+            <div>⛏️ Pickaxes Earned: <span id="sessionPickaxes">0</span></div>
+            <div>📚 Letters Mastered: <span id="totalLetters">0</span>/26</div>
+        </div>
+        <button class="button" id="backToMenuBtn">Back to Menu</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        class Game {
+            constructor() {
+                this.currentLetter = 0;
+                this.points = 0;
+                this.unlockedLetters = 0;
+                this.currentActivity = 0;
+                this.activities = ['mining', 'sound', 'tracing', 'spelling'];
+                this.muted = false;
+                this.sessionStart = 0;
+                this.letterData = this.getLetterData();
+                this.particles = [];
+                this.blocks = [];
+                this.character = { x: 100, y: 400, width: 40, height: 60 };
+                this.currentActivityData = {};
+                this.unlockedCharacters = [];
+                this.characterList = ['🐷', '🐑', '🐺', '🐮', '🐔', '🐴'];
+                
+                this.loadProgress();
+                this.setupEventListeners();
+                this.updateHUD();
+                this.updateCharacterDisplay();
+                this.animate();
+            }
+
+            getLetterData() {
+                const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+                const examples = {
+                    A: ['Apple', 'Ant', 'Arrow'],
+                    B: ['Ball', 'Bear', 'Book'],
+                    C: ['Cat', 'Car', 'Cake'],
+                    D: ['Dog', 'Duck', 'Door'],
+                    E: ['Egg', 'Elephant', 'Eye'],
+                    F: ['Fish', 'Frog', 'Fox'],
+                    G: ['Goat', 'Grass', 'Gift'],
+                    H: ['House', 'Horse', 'Hat'],
+                    I: ['Ice', 'Igloo', 'Insect'],
+                    J: ['Jar', 'Jump', 'Juice'],
+                    K: ['Key', 'Kite', 'King'],
+                    L: ['Lion', 'Lamp', 'Leaf'],
+                    M: ['Moon', 'Mouse', 'Milk'],
+                    N: ['Nest', 'Nose', 'Net'],
+                    O: ['Orange', 'Owl', 'Ocean'],
+                    P: ['Pig', 'Pen', 'Pizza'],
+                    Q: ['Queen', 'Quilt', 'Quest'],
+                    R: ['Rabbit', 'Rain', 'Rock'],
+                    S: ['Sun', 'Snake', 'Star'],
+                    T: ['Tree', 'Tiger', 'Tent'],
+                    U: ['Umbrella', 'Up', 'Uncle'],
+                    V: ['Van', 'Vase', 'Vest'],
+                    W: ['Wolf', 'Water', 'Wood'],
+                    X: ['Xray', 'Box', 'Fox'],
+                    Y: ['Yarn', 'Yellow', 'Yak'],
+                    Z: ['Zebra', 'Zoo', 'Zip']
+                };
+                return alphabet.map(letter => ({
+                    letter,
+                    examples: examples[letter],
+                    sound: letter.toLowerCase()
+                }));
+            }
+
+            setupEventListeners() {
+                document.getElementById('volumeControl').addEventListener('click', () => {
+                    this.muted = !this.muted;
+                    document.getElementById('volumeControl').textContent = this.muted ? '🔇' : '🔊';
+                });
+
+                document.getElementById('newGameBtn').addEventListener('click', () => this.newGame());
+                document.getElementById('continueBtn').addEventListener('click', () => this.continueGame());
+                document.getElementById('reviewBtn').addEventListener('click', () => this.showLetterReview());
+                document.getElementById('startActivitiesBtn').addEventListener('click', () => this.startActivities());
+                document.getElementById('backToMenuBtn').addEventListener('click', () => this.backToMenu());
+
+                canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+            }
+
+            loadProgress() {
+                try {
+                    const saved = localStorage.getItem('letterQuestProgress');
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        this.currentLetter = data.currentLetter || 0;
+                        this.points = data.points || 0;
+                        this.unlockedLetters = data.unlockedLetters || 0;
+                        this.unlockedCharacters = data.unlockedCharacters || [];
+                        document.getElementById('continueBtn').style.display = 'inline-block';
+                    } else {
+                        document.getElementById('continueBtn').style.display = 'none';
+                    }
+                } catch (e) {
+                    console.error('Error loading progress:', e);
+                    document.getElementById('continueBtn').style.display = 'none';
+                }
+            }
+
+            saveProgress() {
+                try {
+                    localStorage.setItem('letterQuestProgress', JSON.stringify({
+                        currentLetter: this.currentLetter,
+                        points: this.points,
+                        unlockedLetters: this.unlockedLetters,
+                        unlockedCharacters: this.unlockedCharacters
+                    }));
+                } catch (e) {
+                    console.error('Error saving progress:', e);
+                }
+            }
+
+            newGame() {
+                if (this.unlockedLetters > 0) {
+                    const confirmed = confirm('Start a new game? This will reset all progress!');
+                    if (!confirmed) {
+                        return;
+                    }
+                }
+                this.currentLetter = 0;
+                this.points = 0;
+                this.unlockedLetters = 0;
+                this.currentActivity = 0;
+                this.sessionStart = 0;
+                this.unlockedCharacters = [];
+                this.particles = [];
+                this.blocks = [];
+                this.saveProgress();
+                this.updateHUD();
+                this.updateCharacterDisplay();
+                this.showLetterIntro();
+            }
+
+            continueGame() {
+                this.sessionStart = this.points;
+                if (this.currentActivity === 0) {
+                    this.showLetterIntro();
+                } else {
+                    this.startActivities();
+                }
+            }
+
+            showLetterReview() {
+                const maxLetter = Math.min(this.unlockedLetters, 25);
+                const message = this.unlockedLetters === 0 
+                    ? 'Complete some letters first to unlock Letter Review!' 
+                    : 'Letter Review: You can practice letters A-' + this.letterData[maxLetter].letter + '\n\n(Full review feature coming soon!)';
+                alert(message);
+            }
+
+            showLetterIntro() {
+                if (this.currentLetter >= 26) {
+                    alert('🎉 You have completed all 26 letters! 🎉');
+                    this.backToMenu();
+                    return;
+                }
+
+                this.hideAllScreens();
+                document.getElementById('letterIntroScreen').classList.add('active');
+                
+                const letter = this.letterData[this.currentLetter];
+                document.getElementById('introLetter').textContent = 
+                    letter.letter + ' ' + letter.letter.toLowerCase();
+                
+                const examplesDiv = document.getElementById('wordExamples');
+                examplesDiv.innerHTML = letter.examples.map(word => `
+                    <div class="word-item">
+                        <div style="font-size: 60px;">${this.getEmoji(word)}</div>
+                        <div style="color: white; font-size: 18px;">${word}</div>
+                    </div>
+                `).join('');
+
+                setTimeout(() => {
+                    this.speak(letter.sound);
+                    letter.examples.forEach((word, i) => {
+                        setTimeout(() => this.speak(word), (i + 1) * 1000);
+                    });
+                }, 500);
+            }
+
+            getEmoji(word) {
+                const emojis = {
+                    Apple: '🍎', Ant: '🐜', Arrow: '➡️', Ball: '⚽', Bear: '🐻', Book: '📚',
+                    Cat: '🐱', Car: '🚗', Cake: '🎂', Dog: '🐕', Duck: '🦆', Door: '🚪',
+                    Egg: '🥚', Elephant: '🐘', Eye: '👁️', Fish: '🐟', Frog: '🐸', Fox: '🦊',
+                    Goat: '🐐', Grass: '🌱', Gift: '🎁', House: '🏠', Horse: '🐴', Hat: '🎩',
+                    Ice: '🧊', Igloo: '⛺', Insect: '🐛', Jar: '🫙', Jump: '🦘', Juice: '🧃',
+                    Key: '🔑', Kite: '🪁', King: '🤴', Lion: '🦁', Lamp: '💡', Leaf: '🍃',
+                    Moon: '🌙', Mouse: '🐭', Milk: '🥛', Nest: '🪺', Nose: '👃', Net: '🥅',
+                    Orange: '🍊', Owl: '🦉', Ocean: '🌊', Pig: '🐷', Pen: '🖊️', Pizza: '🍕',
+                    Queen: '👸', Quilt: '🛏️', Quest: '🗺️', Rabbit: '🐰', Rain: '🌧️', Rock: '🪨',
+                    Sun: '☀️', Snake: '🐍', Star: '⭐', Tree: '🌳', Tiger: '🐯', Tent: '⛺',
+                    Umbrella: '☂️', Up: '⬆️', Uncle: '👨', Van: '🚐', Vase: '🏺', Vest: '🦺',
+                    Wolf: '🐺', Water: '💧', Wood: '🪵', Xray: '🩻', Box: '📦',
+                    Yarn: '🧶', Yellow: '💛', Yak: '🐃', Zebra: '🦓', Zoo: '🦒', Zip: '🤐'
+                };
+                return emojis[word] || '❓';
+            }
+
+            startActivities() {
+                this.currentActivity = 0;
+                this.nextActivity();
+            }
+
+            nextActivity() {
+                this.hideAllScreens();
+                
+                if (this.currentActivity >= 4) {
+                    this.completeLetterMine();
+                    return;
+                }
+
+                const activityType = this.activities[this.currentActivity];
+                const letter = this.letterData[this.currentLetter];
+
+                switch(activityType) {
+                    case 'mining':
+                        this.setupMiningActivity(letter);
+                        break;
+                    case 'sound':
+                        this.setupSoundActivity(letter);
+                        break;
+                    case 'tracing':
+                        this.setupTracingActivity(letter);
+                        break;
+                    case 'spelling':
+                        this.setupSpellingActivity(letter);
+                        break;
+                }
+            }
+
+            setupMiningActivity(letter) {
+                this.hideAllScreens();
+                this.drawMinecraftBackground();
+                this.blocks = [];
+                const targetLetter = letter.letter;
+                
+                // Adjust difficulty based on progress
+                let wrongCount = 4;
+                let targetCount = 3;
+                if (this.unlockedLetters > 7) {
+                    wrongCount = 5;
+                    targetCount = 4;
+                }
+                if (this.unlockedLetters > 15) {
+                    wrongCount = 6;
+                    targetCount = 5;
+                }
+                
+                const wrongLetters = this.getRandomLetters(targetLetter, wrongCount);
+                const allLetters = [];
+                for (let i = 0; i < targetCount; i++) allLetters.push(targetLetter);
+                allLetters.push(...wrongLetters);
+                this.shuffle(allLetters);
+
+                allLetters.forEach((l, i) => {
+                    this.blocks.push({
+                        x: 100 + (i % 4) * 200,
+                        y: 100 + Math.floor(i / 4) * 140,
+                        letter: l,
+                        isTarget: l === targetLetter,
+                        width: 120,
+                        height: 120,
+                        broken: false
+                    });
+                });
+
+                this.currentActivityData = { targetLetter, remaining: targetCount };
+                this.drawMiningBlocks();
+            }
+
+            drawMinecraftBackground() {
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                for (let y = 400; y < canvas.height; y += 50) {
+                    for (let x = 0; x < canvas.width; x += 50) {
+                        ctx.fillStyle = (x + y) % 100 === 0 ? '#228B22' : '#32CD32';
+                        ctx.fillRect(x, y, 50, 50);
+                        ctx.strokeStyle = '#006400';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(x, y, 50, 50);
+                    }
+                }
+
+                ctx.fillStyle = '#FFE4B5';
+                ctx.fillRect(this.character.x, this.character.y, this.character.width, this.character.height);
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(this.character.x + 5, this.character.y, 30, 30);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(this.character.x + 10, this.character.y + 10, 8, 8);
+                ctx.fillRect(this.character.x + 22, this.character.y + 10, 8, 8);
+                ctx.fillRect(this.character.x + 12, this.character.y + 20, 16, 4);
+            }
+
+            drawMiningBlocks() {
+                this.drawMinecraftBackground();
+                
+                // Draw instruction
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(250, 20, 500, 60);
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(250, 20, 500, 60);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 28px Courier';
+                ctx.textAlign = 'center';
+                ctx.fillText('Click blocks with letter: ' + this.currentActivityData.targetLetter, 500, 50);
+                ctx.font = '20px Courier';
+                ctx.fillText('Remaining: ' + this.currentActivityData.remaining, 500, 70);
+
+                this.blocks.forEach(block => {
+                    if (!block.broken) {
+                        ctx.fillStyle = '#808080';
+                        ctx.fillRect(block.x, block.y, block.width, block.height);
+                        
+                        for (let i = 0; i < 4; i++) {
+                            for (let j = 0; j < 4; j++) {
+                                ctx.strokeStyle = '#A9A9A9';
+                                ctx.lineWidth = 2;
+                                ctx.strokeRect(block.x + i * 30, block.y + j * 30, 30, 30);
+                            }
+                        }
+
+                        ctx.fillStyle = 'white';
+                        ctx.font = 'bold 60px Courier';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(block.letter, block.x + 60, block.y + 60);
+                    }
+                });
+
+                this.particles.forEach((p, i) => {
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, 8, 8);
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.5;
+                    p.life--;
+                    if (p.life <= 0) this.particles.splice(i, 1);
+                });
+            }
+
+            setupSoundActivity(letter) {
+                this.hideAllScreens();
+                document.getElementById('activityScreen').classList.add('active');
+                document.getElementById('activityTitle').textContent = 
+                    '🔊 Listen! Which word starts with "' + letter.sound + '"?';
+
+                const correctWord = letter.examples[Math.floor(Math.random() * letter.examples.length)];
+                const wrongWords = this.getRandomWords(correctWord);
+                const options = [correctWord, ...wrongWords];
+                this.shuffle(options);
+
+                const content = document.getElementById('activityContent');
+                content.innerHTML = `
+                    <div class="instruction-tooltip">
+                        👂 Listen carefully and pick the right word!
+                    </div>
+                    <button class="button" style="background: #9C27B0; border-color: #6A1B9A; box-shadow: 0 6px #6A1B9A;" id="repeatSoundBtn">
+                        🔊 Repeat Sound
+                    </button>
+                `;
+
+                options.forEach(word => {
+                    const safeWord = word.replace(/'/g, "\\'");
+                    const safeCorrect = correctWord.replace(/'/g, "\\'");
+                    const btn = document.createElement('button');
+                    btn.className = 'button option-button';
+                    btn.innerHTML = `${this.getEmoji(word)} ${word}`;
+                    btn.setAttribute('data-word', safeWord);
+                    btn.setAttribute('data-correct', safeCorrect);
+                    content.appendChild(btn);
+                });
+
+                document.querySelectorAll('#activityContent .option-button').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const word = e.currentTarget.getAttribute('data-word');
+                        const correct = e.currentTarget.getAttribute('data-correct');
+                        this.checkSound(word, correct);
+                    });
+                });
+
+                document.getElementById('repeatSoundBtn').addEventListener('click', () => {
+                    this.speak(letter.sound);
+                });
+
+                setTimeout(() => this.speak(letter.sound), 500);
+            }
+
+            checkSound(selected, correct) {
+                if (selected === correct) {
+                    this.playSound('correct');
+                    this.addPoints(10);
+                    setTimeout(() => this.speak('Great job!'), 200);
+                    this.currentActivity++;
+                    setTimeout(() => this.nextActivity(), 1500);
+                } else {
+                    this.playSound('wrong');
+                    setTimeout(() => this.speak('Try again!'), 200);
+                }
+            }
+
+            setupTracingActivity(letter) {
+                this.hideAllScreens();
+                document.getElementById('activityScreen').classList.add('active');
+                document.getElementById('activityTitle').textContent = 
+                    '✏️ Trace the letter: ' + letter.letter;
+
+                const content = document.getElementById('activityContent');
+                content.innerHTML = `
+                    <canvas id="traceCanvas" width="400" height="300" 
+                            style="border: 4px solid white; background: rgba(255,255,255,0.9); cursor: crosshair;">
+                    </canvas>
+                    <div style="color: white; font-size: 20px; margin: 10px;">
+                        Click and drag to trace the letter!
+                    </div>
+                `;
+
+                setTimeout(() => this.setupTracing(letter.letter), 100);
+            }
+
+            setupTracing(letter) {
+                const traceCanvas = document.getElementById('traceCanvas');
+                if (!traceCanvas) {
+                    console.error('Trace canvas not found');
+                    return;
+                }
+                
+                const traceCtx = traceCanvas.getContext('2d');
+                let isDrawing = false;
+                let traceProgress = 0;
+                let hasCompleted = false;
+
+                traceCtx.strokeStyle = '#DDD';
+                traceCtx.lineWidth = 20;
+                traceCtx.lineCap = 'round';
+                traceCtx.font = 'bold 200px Courier';
+                traceCtx.textAlign = 'center';
+                traceCtx.textBaseline = 'middle';
+                traceCtx.setLineDash([10, 10]);
+                traceCtx.strokeText(letter, 200, 150);
+
+                const startDrawing = () => {
+                    if (hasCompleted) return;
+                    isDrawing = true;
+                    traceCtx.beginPath();
+                };
+                
+                const stopDrawing = () => {
+                    isDrawing = false;
+                    if (!hasCompleted && traceProgress > 30) {
+                        hasCompleted = true;
+                        this.completeTracing(letter);
+                    }
+                };
+                
+                const draw = (e) => {
+                    if (!isDrawing || hasCompleted) return;
+                    
+                    const rect = traceCanvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    traceCtx.setLineDash([]);
+                    traceCtx.strokeStyle = '#4CAF50';
+                    traceCtx.lineWidth = 15;
+                    traceCtx.lineTo(x, y);
+                    traceCtx.stroke();
+                    traceCtx.beginPath();
+                    traceCtx.moveTo(x, y);
+                    
+                    traceProgress++;
+                };
+
+                traceCanvas.addEventListener('mousedown', startDrawing);
+                traceCanvas.addEventListener('mouseup', stopDrawing);
+                traceCanvas.addEventListener('mousemove', draw);
+                traceCanvas.addEventListener('mouseleave', stopDrawing);
+                
+                // Touch support for tablets
+                traceCanvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    startDrawing();
+                });
+                traceCanvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    stopDrawing();
+                });
+                traceCanvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (!isDrawing || hasCompleted) return;
+                    const touch = e.touches[0];
+                    const rect = traceCanvas.getBoundingClientRect();
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+                    
+                    traceCtx.setLineDash([]);
+                    traceCtx.strokeStyle = '#4CAF50';
+                    traceCtx.lineWidth = 15;
+                    traceCtx.lineTo(x, y);
+                    traceCtx.stroke();
+                    traceCtx.beginPath();
+                    traceCtx.moveTo(x, y);
+                    
+                    traceProgress++;
+                });
+            }
+
+            completeTracing(letter) {
+                this.playSound('correct');
+                this.addPoints(15);
+                
+                const content = document.getElementById('activityContent');
+                content.innerHTML = `
+                    <div style="font-size: 80px; color: #FFD700;">✨ Great! ✨</div>
+                    <div style="color: white; font-size: 24px; margin: 20px;">
+                        Now find and click the letter: <span style="color: #FFD700; font-size: 40px;">${letter}</span>
+                    </div>
+                    <div class="keyboard" id="keyboardContainer">
+                    </div>
+                `;
+
+                const keyboardHtml = this.createKeyboard(letter);
+                document.getElementById('keyboardContainer').innerHTML = keyboardHtml;
+                
+                document.querySelectorAll('.key-button').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const typed = e.target.textContent.trim();
+                        this.checkTyped(typed, letter);
+                    });
+                });
+
+                setTimeout(() => this.speak('Now type ' + letter), 500);
+            }
+
+            createKeyboard(targetLetter) {
+                const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+                const keysToShow = [targetLetter];
+                
+                while (keysToShow.length < 8) {
+                    const randomLetter = letters[Math.floor(Math.random() * letters.length)];
+                    if (!keysToShow.includes(randomLetter)) {
+                        keysToShow.push(randomLetter);
+                    }
+                }
+                
+                this.shuffle(keysToShow);
+                
+                return keysToShow.map(letter => 
+                    `<button class="button key-button">${letter}</button>`
+                ).join('');
+            }
+
+            checkTyped(typed, target) {
+                if (typed === target) {
+                    this.playSound('correct');
+                    this.addPoints(10);
+                    setTimeout(() => this.speak('Perfect!'), 200);
+                    this.currentActivity++;
+                    setTimeout(() => this.nextActivity(), 1500);
+                } else {
+                    this.playSound('wrong');
+                    setTimeout(() => this.speak('Try ' + target), 200);
+                }
+            }
+
+            setupSpellingActivity(letter) {
+                this.hideAllScreens();
+                document.getElementById('activityScreen').classList.add('active');
+                
+                const word = letter.examples[0];
+                document.getElementById('activityTitle').textContent = 
+                    '🏗️ What letter does ' + word + ' start with?';
+
+                const wrongLetters = this.getRandomLetters(letter.letter, 3);
+                const options = [letter.letter, ...wrongLetters];
+                this.shuffle(options);
+
+                const content = document.getElementById('activityContent');
+                content.innerHTML = `
+                    <div style="font-size: 100px; margin: 20px;">
+                        ${this.getEmoji(word)}
+                    </div>
+                    <div style="color: white; font-size: 32px; margin: 20px;">
+                        ${word}
+                    </div>
+                `;
+
+                options.forEach(l => {
+                    const btn = document.createElement('button');
+                    btn.className = 'button option-button';
+                    btn.textContent = l;
+                    btn.addEventListener('click', () => this.checkSpelling(l, letter.letter));
+                    content.appendChild(btn);
+                });
+
+                setTimeout(() => this.speak(word), 500);
+            }
+
+            checkSpelling(selected, correct) {
+                if (selected === correct) {
+                    this.playSound('correct');
+                    this.addPoints(10);
+                    setTimeout(() => this.speak('Excellent!'), 200);
+                    this.currentActivity++;
+                    setTimeout(() => this.nextActivity(), 1500);
+                } else {
+                    this.playSound('wrong');
+                    setTimeout(() => this.speak('Try again!'), 200);
+                }
+            }
+
+            completeLetterMine() {
+                this.unlockedLetters++;
+                
+                // Check for character unlock (every 5 letters)
+                let newCharacter = null;
+                if (this.unlockedLetters % 5 === 0 && this.unlockedLetters <= 30) {
+                    const charIndex = Math.floor(this.unlockedLetters / 5) - 1;
+                    if (charIndex < this.characterList.length && !this.unlockedCharacters.includes(this.characterList[charIndex])) {
+                        newCharacter = this.characterList[charIndex];
+                        this.unlockedCharacters.push(newCharacter);
+                    }
+                }
+                
+                this.currentLetter++;
+                this.currentActivity = 0;
+                this.saveProgress();
+                this.updateHUD();
+                this.updateCharacterDisplay();
+
+                if (this.currentLetter >= 26) {
+                    this.showFinalCelebration();
+                    return;
+                }
+
+                this.hideAllScreens();
+                document.getElementById('completionScreen').classList.add('active');
+                
+                let message = '⛏️ Letter ' + this.letterData[this.currentLetter - 1].letter + ' Mine Completed! ⛏️';
+                
+                if (newCharacter) {
+                    message = `<div class="character-unlock">
+                        <div style="font-size: 60px;">${newCharacter}</div>
+                        <div style="color: white; font-size: 20px;">New Companion Unlocked!</div>
+                    </div>` + message;
+                }
+                
+                document.getElementById('completionMessage').innerHTML = message;
+                document.getElementById('sessionPickaxes').textContent = this.points - this.sessionStart;
+                document.getElementById('totalLetters').textContent = this.unlockedLetters;
+
+                this.playSound('levelup');
+                this.createFireworks();
+            }
+
+            handleCanvasClick(e) {
+                if (this.activities[this.currentActivity] !== 'mining') return;
+                if (!this.currentActivityData.targetLetter) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                this.blocks.forEach(block => {
+                    if (!block.broken && 
+                        x >= block.x && x <= block.x + block.width &&
+                        y >= block.y && y <= block.y + block.height) {
+                        
+                        if (block.isTarget) {
+                            block.broken = true;
+                            this.createParticles(block.x + 60, block.y + 60);
+                            this.playSound('break');
+                            this.addPoints(10);
+                            this.currentActivityData.remaining--;
+
+                            if (this.currentActivityData.remaining === 0) {
+                                setTimeout(() => this.speak('Great mining!'), 300);
+                                setTimeout(() => {
+                                    this.currentActivity++;
+                                    this.nextActivity();
+                                }, 1500);
+                            }
+                        } else {
+                            this.playSound('wrong');
+                            setTimeout(() => this.speak('Find letter ' + this.currentActivityData.targetLetter), 200);
+                        }
+                        
+                        this.drawMiningBlocks();
+                    }
+                });
+            }
+
+            createParticles(x, y) {
+                for (let i = 0; i < 15; i++) {
+                    this.particles.push({
+                        x, y,
+                        vx: (Math.random() - 0.5) * 10,
+                        vy: (Math.random() - 0.5) * 10 - 5,
+                        color: ['#808080', '#A9A9A9', '#C0C0C0'][Math.floor(Math.random() * 3)],
+                        life: 30
+                    });
+                }
+            }
+
+            addPoints(amount) {
+                this.points += amount;
+                this.updateHUD();
+                this.saveProgress();
+            }
+
+            updateHUD() {
+                document.getElementById('pointsDisplay').textContent = this.points;
+                document.getElementById('lettersDisplay').textContent = this.unlockedLetters + '/26';
+                const progress = (this.unlockedLetters / 26) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+            }
+
+            updateCharacterDisplay() {
+                const container = document.getElementById('characterIcons');
+                container.innerHTML = this.characterList.map(char => {
+                    const unlocked = this.unlockedCharacters.includes(char);
+                    return `<span class="character-icon ${unlocked ? 'unlocked' : ''}">${char}</span>`;
+                }).join('');
+            }
+
+            createFireworks() {
+                const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
+                const container = document.createElement('div');
+                container.className = 'celebration';
+                document.body.appendChild(container);
+
+                for (let i = 0; i < 30; i++) {
+                    setTimeout(() => {
+                        const x = Math.random() * window.innerWidth;
+                        const y = Math.random() * window.innerHeight * 0.5;
+                        
+                        for (let j = 0; j < 20; j++) {
+                            const particle = document.createElement('div');
+                            particle.className = 'firework';
+                            particle.style.left = x + 'px';
+                            particle.style.top = y + 'px';
+                            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                            
+                            const angle = (Math.PI * 2 * j) / 20;
+                            const velocity = 50 + Math.random() * 100;
+                            particle.style.setProperty('--tx', Math.cos(angle) * velocity + 'px');
+                            particle.style.setProperty('--ty', Math.sin(angle) * velocity + 'px');
+                            
+                            container.appendChild(particle);
+                            
+                            setTimeout(() => particle.remove(), 1000);
+                        }
+                    }, i * 100);
+                }
+
+                setTimeout(() => container.remove(), 4000);
+            }
+
+            showFinalCelebration() {
+                this.hideAllScreens();
+                
+                // Remove any existing celebration screens
+                document.querySelectorAll('.screen').forEach(s => {
+                    if (s.innerHTML.includes('AMAZING')) {
+                        s.remove();
+                    }
+                });
+                
+                const screen = document.createElement('div');
+                screen.className = 'screen active';
+                screen.innerHTML = `
+                    <h1>🎉 AMAZING! 🎉</h1>
+                    <h2>You've Mastered ALL 26 Letters!</h2>
+                    <div style="font-size: 80px; margin: 20px 0;">
+                        ${this.unlockedCharacters.join(' ')}
+                    </div>
+                    <div style="color: white; font-size: 24px; margin: 20px;">
+                        <div>⛏️ Total Pickaxes: ${this.points}</div>
+                        <div>🏆 All Companions Unlocked!</div>
+                        <div>📚 You are an Alphabet Master!</div>
+                    </div>
+                    <button class="button" id="finalMenuBtn">Back to Menu</button>
+                `;
+                document.body.appendChild(screen);
+                
+                document.getElementById('finalMenuBtn').addEventListener('click', () => {
+                    screen.remove();
+                    this.backToMenu();
+                });
+                
+                this.createFireworks();
+                this.playSound('levelup');
+                
+                setTimeout(() => {
+                    this.speak('Congratulations! You are amazing!');
+                }, 1000);
+            }
+
+            hideAllScreens() {
+                document.querySelectorAll('.screen').forEach(screen => {
+                    screen.classList.remove('active');
+                });
+            }
+
+            backToMenu() {
+                this.hideAllScreens();
+                
+                // Clean up any dynamically created screens
+                document.querySelectorAll('.screen').forEach(screen => {
+                    if (!screen.id) {
+                        screen.remove();
+                    }
+                });
+                
+                document.getElementById('menuScreen').classList.add('active');
+                this.loadProgress();
+                
+                // Clear canvas
+                ctx.fillStyle = '#8B7355';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            getRandomLetters(exclude, count) {
+                const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(l => l !== exclude);
+                const result = [];
+                while (result.length < count) {
+                    const random = letters[Math.floor(Math.random() * letters.length)];
+                    if (!result.includes(random)) {
+                        result.push(random);
+                    }
+                }
+                return result;
+            }
+
+            getRandomWords(exclude) {
+                const allWords = [];
+                this.letterData.forEach(ld => {
+                    allWords.push(...ld.examples);
+                });
+                const filtered = allWords.filter(w => w !== exclude && w.charAt(0) !== exclude.charAt(0));
+                
+                if (filtered.length < 2) {
+                    // Fallback if not enough different words
+                    return ['Ball', 'Cat'].filter(w => w !== exclude);
+                }
+                
+                const result = [];
+                while (result.length < 2 && filtered.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * filtered.length);
+                    const random = filtered[randomIndex];
+                    if (!result.includes(random)) {
+                        result.push(random);
+                    }
+                    filtered.splice(randomIndex, 1);
+                }
+                return result;
+            }
+
+            shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            speak(text) {
+                if (this.muted) return;
+                
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    
+                    setTimeout(() => {
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.rate = 0.8;
+                        utterance.pitch = 1.1;
+                        utterance.volume = 1;
+                        utterance.lang = 'en-US';
+                        window.speechSynthesis.speak(utterance);
+                    }, 100);
+                }
+            }
+
+            playSound(type) {
+                if (this.muted) return;
+                
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                switch(type) {
+                    case 'correct':
+                        oscillator.frequency.value = 523.25;
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.3);
+                        break;
+                    case 'wrong':
+                        oscillator.frequency.value = 200;
+                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.2);
+                        break;
+                    case 'break':
+                        oscillator.type = 'square';
+                        oscillator.frequency.value = 150;
+                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.15);
+                        break;
+                    case 'levelup':
+                        oscillator.frequency.value = 523.25;
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        oscillator.start(audioContext.currentTime);
+                        setTimeout(() => {
+                            oscillator.frequency.value = 659.25;
+                        }, 100);
+                        setTimeout(() => {
+                            oscillator.frequency.value = 783.99;
+                        }, 200);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                        oscillator.stop(audioContext.currentTime + 0.5);
+                        break;
+                }
+            }
+
+            animate() {
+                if (this.activities[this.currentActivity] === 'mining') {
+                    this.drawMiningBlocks();
+                }
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        let game;
+        window.addEventListener('load', () => {
+            game = new Game();
+        });
+    </script>
+</body>
+</html>
